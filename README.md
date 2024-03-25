@@ -1,2 +1,2 @@
 # TypingGame
-Console simple typing game
+simple Console typing game
