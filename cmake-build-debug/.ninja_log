@@ -1,8 +1,0 @@
-# ninja log v5
-1	128	7331653179349332	build.ninja	c6171702c1ca42b5
-526	636	7331652088584151	TypingGame.exe	958d5af0f79faa64
-8	124	7331651300103984	CMakeFiles/TypingGame.dir/gametime.cpp.obj	182100f242ae3461
-2	526	7331652087559561	CMakeFiles/TypingGame.dir/main.cpp.obj	64f000c566db91d0
-9	488	7331655621635840	CMakeFiles/TypingGame.dir/gametime.cpp.obj	182100f242ae3461
-5	696	7331655623698997	CMakeFiles/TypingGame.dir/main.cpp.obj	64f000c566db91d0
-696	835	7331655625037773	TypingGame.exe	958d5af0f79faa64
