@@ -5,8 +5,9 @@
 // #include <windows.h> //for the Beep() sound
 #include <iomanip>
 #include <cmath>
-
 #include <chrono> // for time calculation
+
+using namespace std;
 
 class Time
 {
@@ -40,14 +41,19 @@ public:
     {
         return static_cast<double>(duration.count());
     }
+    void printTime()
+    {
+        cout << setw(2) << setfill('0') << getMinutes() << ':'
+             << setw(2) << setfill('0') << getSeconds() << 's';
+    }
 };
-
-using namespace std;
 
 // defines red and green colors for the ANSI escape sequences
 #define red 31
 #define green 32
 #define enter (char)13
+#define backspace (char)8
+#define escape (char)27
 
 // a vector of pairs to store the characters with their corresponding condition
 vector<pair<char, int>> word;
@@ -67,7 +73,11 @@ void remove_duplicate_spaces(string &str);
 
 int calculate_wpm(Time &time, int &correct_chars, int &correct_spaces);
 
-void test_input(int &word_length, int &no_of_chars_typed, int &correct_chars, int &correct_spaces);
+void get_test_input(int &word_length, int &correct_chars, int &correct_spaces, int &incorrect_chars);
+
+void displayInstructions();
+
+string calculateAccuracy(int &correct_chars, int &incorrect_chars);
 
 // prints the current word progress
 void print(vector<pair<char, int>> &gameTxt)
@@ -75,12 +85,12 @@ void print(vector<pair<char, int>> &gameTxt)
     system("cls"); // clears the screen
     for (auto pr : gameTxt)
     {
-        cout << "\033[1;" << pr.second << "m";
+        cout << "\033[" << pr.second << "m";
 
         switch (pr.first)
         {
         case enter:
-            cout << "\\n"
+            cout << " ->"
                  << endl;
             break;
 
@@ -118,12 +128,12 @@ void logic()
     int word_length = setup();
     Time time;
 
-    int no_of_chars_typed{0}, correct_chars{0}, correct_spaces{0};
+    int correct_chars{0}, incorrect_chars{0}, correct_spaces{0};
 
     // time of the game begin
     time.start();
 
-    test_input(word_length, no_of_chars_typed, correct_chars, correct_spaces);
+    get_test_input(word_length, correct_chars, correct_spaces, incorrect_chars);
 
     // time of the game finish
     time.end();
@@ -139,11 +149,10 @@ void logic()
     // calculates the success rate
     // by dividing the number of correct characters type by the total characters
     cout << endl
-         << "WPM: "
-         << calculate_wpm(time, correct_chars, correct_spaces)
-         << "  Accuracy: " << ((correct_chars * 100) / word_length) << '%' << endl
-         << "Elapsed time: " << setw(2) << setfill('0') << time.getMinutes() << ':'
-         << setw(2) << setfill('0') << time.getSeconds() << 's';
+         << "WPM: " << calculate_wpm(time, correct_chars, correct_spaces)
+         << "  Accuracy: " << calculateAccuracy(correct_chars, incorrect_chars) << endl
+         << "Elapsed time: ";
+    time.printTime();
     mini_menu();
 }
 
@@ -156,11 +165,15 @@ int main()
 void main_menu()
 {
     system("cls");
-    cout << "\tTYPING GAME" << endl
-         << endl
-         << "[1] Start game" << endl
-         << "[2] Import custom text" << endl
-         << "[esc] Exit" << endl;
+    cout << '\t' << R"(TYPING GAME 
+
+[1] Start game 
+[2] Instructions 
+[3] Import custom text 
+[4] Settings 
+[esc] Exit)"
+         << endl;
+
 input:
     switch (getch())
     {
@@ -168,15 +181,20 @@ input:
         start_game();
         break;
     case '2':
+        displayInstructions();
+        break;
+    case '3':
         setup(import_text(), 2);
         mini_menu(2);
         break;
-    case 27: // exits on escape
+    case '4':
+        break;
+    case escape: // exits on escape
         exit(0);
     default:
         cout << endl
              << "Invalid choice" << endl
-             << "enter choice again" << endl;
+             << "Enter choice again" << endl;
         goto input;
     }
 }
@@ -187,8 +205,7 @@ void mini_menu(int num)
     cout << endl
          << endl
          << (num == 1 ? "[1] Play again" : "[1] Start game") << endl
-         << "[2] Main menu" << endl
-         << "[esc] Exit";
+         << "[2] Main menu" << endl;
 input:
     switch (getch())
     {
@@ -198,11 +215,9 @@ input:
     case '2':
         main_menu();
         break;
-    case 27:
-        exit(0);
     default:
         cout << "Invalid choice" << endl
-             << "enter choice again" << endl;
+             << "Enter choice again" << endl;
         goto input;
     }
 }
@@ -211,7 +226,7 @@ void start_game()
 {
     system("cls");
     cout << endl
-         << "  press any button to start";
+         << "\tpress any button to start";
     while (true)
     {
         if (kbhit()) // checks for any buttons pressed to start the game
@@ -226,6 +241,7 @@ void start_game()
 string import_text()
 {
     system("cls");
+input:
     cout << "Enter text:" << endl
          << endl;
 
@@ -236,13 +252,16 @@ string import_text()
         remove_duplicate_spaces(line);
         text.append(line + enter);
     }
-
-    if (!text.empty())
-        text.pop_back();
+    if (text.empty())
+    {
+        cout << "Invalid!" << endl;
+        goto input;
+    }
+    text.pop_back();
     if (text.back() == ' ')
         text.pop_back();
 
-    cout << "Added successfully!" << endl;
+    cout << "Added successfully!";
     return text;
 }
 
@@ -267,9 +286,10 @@ int calculate_wpm(Time &time, int &correct_chars, int &correct_spaces)
     return round((correct_chars + correct_spaces) * (60 / time.getTotalTimeInSeconds()) / 5.0);
 }
 
-void test_input(int &word_length, int &no_of_chars_typed, int &correct_chars, int &correct_spaces)
+void get_test_input(int &word_length, int &correct_chars, int &correct_spaces, int &incorrect_chars)
 {
     char typed_char;
+    int no_of_chars_typed{0};
 
     // closes when the typed character equals the length of the text
     while (no_of_chars_typed < word_length)
@@ -278,8 +298,17 @@ void test_input(int &word_length, int &no_of_chars_typed, int &correct_chars, in
         {
             typed_char = (char)getch(); // takes the typed character as input
 
-            if (typed_char == 27) // exits if the player presses escape
-                exit(0);
+            if (typed_char == escape) // stops if the player presses escape
+                break;
+
+            if (typed_char == backspace)
+            {
+                no_of_chars_typed--;
+
+                word[no_of_chars_typed].second = 0;
+                print(word);
+                continue;
+            }
 
             if (typed_char == word[no_of_chars_typed].first)
             {
@@ -292,11 +321,36 @@ void test_input(int &word_length, int &no_of_chars_typed, int &correct_chars, in
             else
             {
                 word[no_of_chars_typed].second = red; // colors the character red on mistakes
-                // Beep(800, 200);                       // adds a beep sound on mistakes
+                incorrect_chars++;
+                // adds a beep sound on mistakes
+                // Beep(800, 200);
             }
 
             print(word); // prints the text with visual cues
             no_of_chars_typed++;
         }
     }
+}
+
+void displayInstructions()
+{
+    system("cls");
+    cout << R"(Game instructions:
+
+1. Type the displayed text as accurately and quickly as possible.
+2. Use the backspace key to correct mistakes.
+3. Words are separated by an underscore "_" to indicate a whitespace.
+4. New lines are displayed as "->" to indicate an enter.
+5. Pay attention to punctuation and capitalization.
+6. The game ends when you've typed the entire text correctly.
+7. Press Escape to stop the game and head back to the menu.
+
+Have fun while improving your typing skills!)";
+
+    mini_menu(2);
+}
+
+string calculateAccuracy(int &correct_chars, int &incorrect_chars)
+{
+    return to_string((int)round((correct_chars * 100.0) / (correct_chars + incorrect_chars))) + '%';
 }
