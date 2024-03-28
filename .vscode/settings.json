@@ -56,5 +56,9 @@
     "streambuf": "cpp",
     "typeinfo": "cpp",
     "variant": "cpp"
-  }
+  },
+  "cSpell.words": [
+    "EMAG",
+    "GNIPYT"
+  ]
 }
