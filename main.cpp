@@ -6,7 +6,9 @@
 #include <cmath>   // for simple math
 #include <chrono>  // for time calculation
 #include <thread>  // for multithreading
-// #include <windows.h> //for the Beep() sound
+#include <fstream> // for files
+#include <sstream> // for string streams
+#include <random>  // for random number generation
 
 using namespace std;
 
@@ -58,8 +60,10 @@ public:
 #define cls cout << "\033[2J\033[1;1H"; // ANSI escape code to clear screen
 
 // a vector of pairs to store the characters with their corresponding condition (color)
-vector<pair<char, int>> word;
+vector<pair<char, int>> testText;
+vector<string> gameTxt; // will be used to generate a random test
 string current_text{"hello world"};
+const int wordsInTest = 10;
 
 void main_menu();
 
@@ -81,11 +85,20 @@ string calculateAccuracy(int &correct_chars, int &incorrect_chars);
 
 void game_intro();
 
+void readFileText();
+
+void generateTest();
+
+int generateRandomNumber(const int &max);
+
 // prints the current word progress
 void print(vector<pair<char, int>> &gameTxt, int charsTyped, const int &wordLength)
 {
     // calculates progress percentage
     int percentDone = ((charsTyped * 100) / wordLength);
+    
+    if (percentDone < 0)
+        percentDone = 0;
     cls; // clears the screen
     for (auto pr : gameTxt)
     {
@@ -109,29 +122,35 @@ void print(vector<pair<char, int>> &gameTxt, int charsTyped, const int &wordLeng
         }
         cout << "\033[0m" << flush;
     }
-    // prints progress
+    // prints progress bar
     cout << endl
          << endl
-         << "progress: " << percentDone << '%' << endl;
+         << "progress: [" << flush;
 
     for (int i = 0; i < percentDone; i += 10)
-    {
-        cout << '#';
-    }
+        cout << '#' << flush;
+
+    cout << '>' << flush;
+
+    for (int i = 100 - percentDone; i > 0; i -= 10)
+        cout << '.' << flush;
+
+    cout << "] " << percentDone << '%' << endl
+         << flush;
 }
 
 // sets up the game text according to the parameter
-int setup(const string &txt = current_text, int mode = 1) // mode = 1 prints the word else it doesn't
+int setup(const string &txt = current_text, int mode = 1) // mode = 1 prints the word, else = it doesn't
 {
-    word.clear();
+    testText.clear();
 
     for (auto &ch : txt)
-        word.emplace_back(ch, 0);
+        testText.emplace_back(ch, 0);
 
-    word.shrink_to_fit(); // reduces the vector's capacity to fit its size
+    testText.shrink_to_fit(); // reduces the vector's capacity to fit its size
 
     if (mode == 1)
-        print(word, 0, current_text.length()); // prints the first time to know what to type
+        print(testText, 0, current_text.length()); // prints the first time to know what to type
 
     current_text = txt;
     return (int)txt.length(); // returns the length of the text
@@ -172,6 +191,7 @@ void logic()
 
 int main()
 {
+    readFileText();
     cout << "\033[?25l"; // ANSI escape code to hide cursor
     main_menu();
     return 0;
@@ -187,7 +207,7 @@ void main_menu()
 [3] Import custom text 
 [4] Settings 
 [esc] Exit)";
-
+    // TODO: add text generation thread
 input:
     switch (getch())
     {
@@ -213,20 +233,26 @@ input:
     }
 }
 
-//[1] -> mode 1 = "play again"; else = "start game";
+//[1] -> mode 1 = "Next test"; else = "start game";
 void mini_menu(int mode)
 {
     cout << endl
          << endl
-         << (mode == 1 ? "[1] Play again" : "[1] Start game") << endl
-         << "[2] Main menu";
+         << (mode == 1 ? "[1] Next test" : "[1] Start game") << endl
+         << (mode == 1 ? "[2] Restart test" : "[2] Start random test") << endl
+         << "[3] Main menu";
 input:
     switch (getch())
     {
     case '1':
+        if (mode == 1)
+            generateTest();
         start_game();
         break;
     case '2':
+        start_game();
+        break;
+    case '3':
         main_menu();
         break;
     default:
@@ -324,34 +350,32 @@ void get_test_input(int &word_length, int &correct_chars, int &correct_spaces, i
             if (typed_char == escape) // stops if the player presses escape
                 break;
 
-            if (typed_char == backspace) // backspace functionality
+            if ((typed_char == backspace) && (typedChars >= 0)) // backspace functionality
             {
-                word[--index].second = 0; // changes the character back to normal color
+                testText[--index].second = 0; // changes the character back to normal color
                 typedChars--;
-                print(word, typedChars, word_length);
+                print(testText, typedChars, word_length);
                 continue; // skips the rest of the iteration
             }
 
-            if (typed_char == word[index].first)
+            if (typed_char == testText[index].first)
             {
                 // colors the current character green if it is correct
-                word[index].second = green;
+                testText[index].second = green;
                 correct_chars++; // increments the count of the correct characters typed
 
-                if (word[index].first == ' ' || word[index].first == enter)
+                if (testText[index].first == ' ' || testText[index].first == enter)
                     correct_spaces++;
                 typedChars++;
             }
             else
             {
-                word[index].second = red; // colors the character red on mistakes
-                incorrect_chars++;        // increments the count of the incorrect characters typed
+                testText[index].second = red; // colors the character red on mistakes
+                incorrect_chars++;            // increments the count of the incorrect characters typed
                 typedChars++;
-                // adds a beep sound on mistakes
-                // Beep(800, 200); /* slows down input */
             }
 
-            print(word, typedChars, word_length); // prints the text with visual cues
+            print(testText, typedChars, word_length); // prints the text with visual cues
             index++;
         }
     }
@@ -397,4 +421,67 @@ void game_intro() // displays blinking game intro
         this_thread::sleep_for(1s); // waits before continuing
     }
     testIsActive = true;
+}
+
+// opens the words file to store the file's contents in a vector
+void readFileText()
+{
+    ifstream fin(R"(testGeneration\words.txt)", ios::in); // specifies read only
+
+    if (!fin.is_open()) // checks if the file had no problems opening
+    {
+        cls;
+        cout << "Failed to open file";
+        exit(-1);
+    }
+    string word;
+
+    // TODO: don't always read from start to finish of the file
+    while (fin >> word) // takes input till reaching the end of the file
+        gameTxt.push_back(word);
+
+    fin.close();             // closes the file
+    gameTxt.shrink_to_fit(); // removes the vector's extra capacity
+                             // TODO: change it to a number from settings
+    // TODO: consider a class
+    generateTest();
+}
+
+void generateTest()
+{
+    int testWordsCount = (int)gameTxt.size();
+    if (testWordsCount < 1)
+    {
+        cout << "failed : generate test";
+        exit(0);
+    }
+    string testTxt;
+    ostringstream oss(testTxt);
+
+    if (!gameTxt.empty())
+    {
+        if (wordsInTest < 1)
+        {
+            cout << "words in test less than 1";
+            exit(0);
+        }
+        for (int i = 0; i < wordsInTest - 1; i++)
+            oss << gameTxt[generateRandomNumber(testWordsCount)] << ' '; // TODO: change the max to a global variable or something
+        oss << gameTxt[generateRandomNumber(testWordsCount)];
+        current_text = oss.str();
+    }
+    else
+    {
+        cout << "Failed: gametxt is empty";
+        exit(0);
+    }
+}
+
+// generates a random number in a given range
+int generateRandomNumber(const int &max)
+{
+    std::random_device rd;                               // Obtain a random number from hardware
+    std::mt19937 gen(rd());                              // Seed the generator
+    uniform_int_distribution<> distribution(0, max - 1); // Define the range
+    return distribution(gen);
 }

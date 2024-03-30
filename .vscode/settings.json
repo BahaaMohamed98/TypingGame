@@ -55,10 +55,8 @@
     "stop_token": "cpp",
     "streambuf": "cpp",
     "typeinfo": "cpp",
-    "variant": "cpp"
+    "variant": "cpp",
+    "fstream": "cpp"
   },
-  "cSpell.words": [
-    "EMAG",
-    "GNIPYT"
-  ]
+  "cSpell.words": ["EMAG", "GNIPYT"]
 }
