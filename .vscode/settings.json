@@ -58,5 +58,10 @@
     "variant": "cpp",
     "fstream": "cpp"
   },
-  "cSpell.words": ["EMAG", "GNIPYT"]
+  "cSpell.words": [
+    "EMAG",
+    "fout",
+    "gametxt",
+    "GNIPYT"
+  ]
 }
