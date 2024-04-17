@@ -2,15 +2,20 @@
 
 Welcome to the Typing Game! This is a simple typing game written in C++ that allows you to practice your typing skills while having fun.
 
+## How to Play
+
+- Start typing the displayed text accurately and quickly.
+- Correct mistakes as you go.
+- Complete the text before time runs out.
+- Press Escape to exit anytime.
+
 ## Features
 
-- Start the game and type the displayed text as accurately and quickly as possible.
-- Use the backspace key to correct mistakes.
-- Words are separated by underscores "_" to indicate a whitespace.
-- New lines are displayed as "->" to indicate an enter.
-- Pay attention to punctuation and capitalization.
-- The game ends when you've typed the entire text correctly.
-- Press Escape to stop the game.
+- Color-coded text: Green for correct, red for mistakes.
+- Visual cues: Underscores for spaces, "->" for new lines.
+- Progress bar: Track completion status.
+- Time elapsed: See how long you've been typing.
+- WPM (Words Per Minute): Monitor typing speed.
 
 ## Getting Started
 
@@ -36,4 +41,3 @@ You can also input custom text to practice typing:
 - **Import from File:** Paste text into a file when prompted, and it will be automatically loaded into the game.
 
 After importing custom text, start the game and begin typing!
-
