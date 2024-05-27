@@ -588,7 +588,7 @@ void readFileText()
 {
     allGameWords.clear(); // clears the global vector to remove unwanted old words
 
-    ifstream fin(R"(testGeneration\words.txt)", ios::in); // specifies read only
+    ifstream fin(R"(..\testGeneration\words.txt)", ios::in); // specifies read only
 
     if (!fin.is_open()) // checks if the file had no problems opening
     {
@@ -771,7 +771,7 @@ void settings()
 
 void import_settings()
 {
-    ifstream fin(R"(testGeneration\settings.txt)", ios::in);
+    ifstream fin(R"(..\testGeneration\settings.txt)", ios::in);
 
     if (!fin.is_open())
     {
@@ -785,7 +785,7 @@ void import_settings()
 
 void updateSettings()
 {
-    ofstream fout(R"(testGeneration\settings.txt)", ios::trunc);
+    ofstream fout(R"(..\testGeneration\settings.txt)", ios::trunc);
 
     if (!fout.is_open())
     {
